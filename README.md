@@ -36,7 +36,6 @@ automatedPNG/
 ├── start.ps1                  # PowerShell启动脚本
 ├── src/
 │   ├── main_antialiasing.py    # 主程序（推荐）
-│   ├── preview_design.py       # 快速预览
 │   └── debug_text_bounds.py    # 调试工具
 ├── resources/
 │   ├── logo.png               # Logo文件
@@ -99,11 +98,9 @@ python run.py
 cd src
 
 # 使用虚拟环境Python（Windows）
-..\.venv\Scripts\python.exe preview_design.py      # 生成单张预览图
 ..\.venv\Scripts\python.exe main_antialiasing.py   # 批量生成所有图片
 
 # 使用虚拟环境Python（Linux/Mac）
-../.venv/bin/python preview_design.py              # 生成单张预览图
 ../.venv/bin/python main_antialiasing.py           # 批量生成所有图片
 ```
 
@@ -142,9 +139,10 @@ SUPER_SAMPLE_FACTOR = 4   # 4倍超采样
 
 ## 🛠️ 开发工具
 
-- `preview_design.py` - 快速生成单张预览图
 - `debug_text_bounds.py` - 调试文字边界问题
 - 支持系统字体回退（微软雅黑）
+- 智能动态字体大小调整
+- 专业级抗锯齿渲染技术
 
 ## 📋 依赖要求
 

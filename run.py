@@ -109,12 +109,11 @@ def show_menu():
     menu = """
     🎛️  请选择要执行的功能：
     
-    [1] 🖼️  生成单张预览图 (preview_design.py)
-    [2] 🎨 批量生成所有图片 (main_antialiasing.py) - 推荐
-    [3] 🛠️  调试文字边界 (debug_text_bounds.py)
-    [4] 📂 打开输出目录
-    [5] 📝 编辑语录数据 (quotes.csv)
-    [6] 🗑️  清空输出目录
+    [1] 🎨 批量生成所有图片 (main_antialiasing.py) - 推荐
+    [2] 🛠️  调试文字边界 (debug_text_bounds.py)
+    [3] 📂 打开输出目录
+    [4] 📝 编辑语录数据 (quotes.csv)
+    [5] 🗑️  清空输出目录
     [0] ❌ 退出程序
     
     """
@@ -312,22 +311,20 @@ def main():
     while True:
         show_menu()
         try:
-            choice = input("请输入选项 (0-6): ").strip()
+            choice = input("请输入选项 (0-5): ").strip()
             
             if choice == "0":
                 print("👋 感谢使用！再见！")
                 break
             elif choice == "1":
-                run_script("preview_design.py")
-            elif choice == "2":
                 run_script("main_antialiasing.py")
-            elif choice == "3":
+            elif choice == "2":
                 run_script("debug_text_bounds.py")
-            elif choice == "4":
+            elif choice == "3":
                 open_output_directory()
-            elif choice == "5":
+            elif choice == "4":
                 edit_quotes_file()
-            elif choice == "6":
+            elif choice == "5":
                 clear_output_directory()
             else:
                 print("❌ 无效选项，请重新选择")
