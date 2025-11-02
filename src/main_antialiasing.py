@@ -7,6 +7,8 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.dirname(script_dir)
 
 logo_path = os.path.join(project_root, "resources", "logo.png")
+theme_icon_path = os.path.join(project_root, "resources", "theme.png")
+home_icon_path = os.path.join(project_root, "resources", "home.png")
 font_path = os.path.join(project_root, "resources", "fonts", "SmileySans-Oblique.ttf")
 quotes_path = os.path.join(project_root, "resources", "quotes.csv")
 output_dir = os.path.join(project_root, "output")
@@ -226,6 +228,16 @@ def add_corner_decorations(draw, width, height):
     points = [(width - 50, height - 50), (width - 150, height - 50), (width - 50, height - 150)]
     draw.polygon(points, fill=corner_color)
 
+def load_icon(icon_path, size):
+    """加载图标文件，支持PNG格式"""
+    try:
+        icon = Image.open(icon_path).convert("RGBA")
+        return icon.resize(size, Image.Resampling.LANCZOS)
+    except Exception as e:
+        print(f"❌ 图标加载失败: {icon_path} - {e}")
+        # 返回一个默认的空白图标
+        return Image.new('RGBA', size, (100, 100, 100, 100))
+
 def draw_subtle_pattern(bg, width, height):
     """添加微妙的背景图案"""
     pattern_img = Image.new('RGBA', (width, height), (0, 0, 0, 0))
@@ -247,9 +259,17 @@ def draw_subtle_pattern(bg, width, height):
     bg = Image.alpha_composite(bg, pattern_img)
     return bg
 
-# ========== 载入语录 ==========
+# ========== 载入语录和资源 ==========
 df = pd.read_csv(quotes_path, encoding="utf-8")
 logo = Image.open(logo_path).convert("RGBA")
+
+# 预设图标大小
+theme_icon_size = (500, 500)  # 缩小到原来一半大小（原480px的一半）
+home_icon_size = (500, 500)   # 保持4倍放大
+
+# 载入图标
+theme_icon = load_icon(theme_icon_path, theme_icon_size)
+home_icon = load_icon(home_icon_path, home_icon_size)
 
 print(f"🎨 开始生成专业级抗锯齿4K图片 ({IMG_WIDTH}x{IMG_HEIGHT})")
 print(f"🔧 超采样倍数: {SUPER_SAMPLE_FACTOR}x (完全消除锯齿)")
@@ -271,66 +291,81 @@ for idx, (_, row) in enumerate(df.iterrows(), 1):
     # --- 添加角落装饰 ---
     add_corner_decorations(draw, IMG_WIDTH, IMG_HEIGHT)
     
-    # --- 放置 logo ---
-    logo_size = (360, 360)
+    # --- 品牌头部：左边logo图片 + 右边文字 ---
+    # 左侧：logo图片
+    logo_size = (180, 180)  # 适中的logo大小
     logo_resized = logo.resize(logo_size, Image.Resampling.LANCZOS)
-    logo_pos = (160, 160)
     
-    # 添加logo周围的装饰圆环
-    ring_center = (logo_pos[0] + logo_size[0]//2, logo_pos[1] + logo_size[1]//2)
-    ring_radius = logo_size[0]//2 + 30
-    ring_color = (180, 180, 180, 80)
-    
-    # 绘制装饰圆环
-    draw.ellipse([ring_center[0] - ring_radius, ring_center[1] - ring_radius,
-                  ring_center[0] + ring_radius, ring_center[1] + ring_radius], 
-                 outline=ring_color, width=3)
-    
-    # 添加阴影效果
-    shadow_offset = (8, 8)
-    shadow_color = (0, 0, 0, 40)
-    shadow_img = Image.new('RGBA', logo_size, shadow_color)
-    bg.paste(shadow_img, (logo_pos[0] + shadow_offset[0], logo_pos[1] + shadow_offset[1]), shadow_img)
-    bg.paste(logo_resized, logo_pos, logo_resized)
-    
-    # --- 添加标题文字 "每天一点心理学" ---
+    # 右侧：每天一点心理学 文字
     title_text = "每天一点心理学"
-    title_font_size = 85  # 适中的标题字体大小
-    title_color = (80, 80, 80)  # 深灰色
+    title_font_size = 95
+    title_color = (60, 60, 60)
     
-    # 创建标题字体
+    # 创建字体
     try:
-        title_font = ImageFont.truetype(font_path if os.path.exists(font_path) else "C:/Windows/Fonts/msyh.ttc", title_font_size)
+        brand_font = ImageFont.truetype(font_path if os.path.exists(font_path) else "C:/Windows/Fonts/msyh.ttc", title_font_size)
     except:
-        title_font = ImageFont.load_default()
+        brand_font = ImageFont.load_default()
     
-    # 使用超采样渲染标题
+    # 渲染标题文字
     title_img, title_w, title_h = render_text_with_supersampling(title_text, title_font_size, title_color)
     
-    # 标题位置：logo右边，垂直居中对齐
-    title_x = logo_pos[0] + logo_size[0] + 80  # logo右边留80px间距
-    title_y = logo_pos[1] + (logo_size[1] - title_h) // 2  # 与logo垂直居中
+    # 计算总宽度和居中位置
+    separator_w = 60  # 分隔符宽度
+    total_w = logo_size[0] + separator_w + title_w
+    start_x = (IMG_WIDTH - total_w) // 2
+    brand_y = 200  # 顶部位置
     
-    # 为标题添加装饰性下划线
-    underline_y = title_y + title_h + 15
-    underline_color = (120, 120, 120, 150)
-    draw.line([(title_x, underline_y), (title_x + title_w, underline_y)], 
-              fill=underline_color, width=3)
+    # 放置logo图片（左侧）
+    logo_x = start_x
+    logo_y = brand_y
     
-    # 粘贴标题文字
+    # 添加logo阴影
+    logo_shadow_offset = 4
+    logo_shadow_color = (0, 0, 0, 50)
+    logo_shadow_bg = Image.new('RGBA', logo_size, logo_shadow_color)
+    bg.paste(logo_shadow_bg, (logo_x + logo_shadow_offset, logo_y + logo_shadow_offset), logo_shadow_bg)
+    bg.paste(logo_resized, (logo_x, logo_y), logo_resized)
+    
+    # 绘制分隔符 "|"
+    separator_x = logo_x + logo_size[0] + 20
+    separator_y = brand_y + (logo_size[1] - title_h) // 2  # 与文字垂直居中
+    separator_color = (120, 120, 120)
+    draw.text((separator_x, separator_y), "|", font=brand_font, fill=separator_color)
+    
+    # 放置标题文字（右侧）
+    title_x = separator_x + 40
+    title_y = brand_y + (logo_size[1] - title_h) // 2  # 与logo垂直居中
     bg.paste(title_img, (title_x, title_y), title_img)
+    
+    # 添加品牌装饰线
+    brand_line_y = brand_y + logo_size[1] + 30
+    brand_line_color = (120, 120, 120, 150)
+    line_length = total_w + 100
+    line_x = (IMG_WIDTH - line_length) // 2
+    draw.line([(line_x, brand_line_y), (line_x + line_length, brand_line_y)], 
+              fill=brand_line_color, width=3)
 
-    # --- 主题小标题（高位浮动，超大字号设计） ---
+    # --- 主题插画居中 ---
+    theme_icon_x = (IMG_WIDTH - theme_icon_size[0]) // 2  # 水平居中
+    theme_icon_y = brand_line_y + 100  # 在品牌线下方100px
+    
+    # 为theme图标添加阴影
+    icon_shadow_offset = 5
+    icon_shadow_color = (0, 0, 0, 70)
+    shadow_bg = Image.new('RGBA', theme_icon_size, icon_shadow_color)
+    bg.paste(shadow_bg, (theme_icon_x + icon_shadow_offset, theme_icon_y + icon_shadow_offset), shadow_bg)
+    bg.paste(theme_icon, (theme_icon_x, theme_icon_y), theme_icon)
+
+    # --- 主题小标题（回到原来的浮动位置） ---
     content_text = row['content'].strip()
     theme_keyword = extract_theme_keyword(content_text)
-    
-    # 渲染主题小标题 - 超大字号，现代化设计
-    theme_font_size = 140  # 继续增大到140px，更加突出
-    theme_color = (50, 90, 140, 255)  # 更深的蓝色，增强视觉冲击力
+    theme_font_size = 140
+    theme_color = (50, 90, 140, 255)
     theme_img, theme_w, theme_h = render_text_with_supersampling(theme_keyword, theme_font_size, theme_color)
-    
-    # 主题标题位置（超高位浮动，视觉焦点）
-    theme_y = 1000  # 继续上移到1000，极致突出
+
+    # --- 主题标题居中（在插画下方） ---
+    theme_y = theme_icon_y + theme_icon_size[1] + 60  # 在插画下方60px
     theme_x = (IMG_WIDTH - theme_w) // 2
     
     # 为主题词添加微妙阴影效果
@@ -357,11 +392,11 @@ for idx, (_, row) in enumerate(df.iterrows(), 1):
     draw.line([(line_x + 90, line_y + 30), (line_x + line_length - 90, line_y + 30)], 
               fill=(170, 180, 190, 80), width=1)  # 最轻装饰线
     
-    # --- 上装饰分隔栏（调整到更下方，给主题词更多空间） ---
-    divider_y_top = 1320  # 进一步下移，增加主题词的独立空间
+    # --- 上装饰分隔栏（确保在主题词下方） ---
+    divider_y_top = max(theme_y + theme_h + 100, 1320)  # 确保分割线在主题词下方，保持浮动结构
     draw_decorative_divider(draw, 0, divider_y_top, IMG_WIDTH, "elegant")
 
-    # --- 主体心理句 (动态字体大小 + 增强行距 + 极小页边距) ---
+    # --- 主体心理句 (动态字体大小 + 增强行距 + 柔和背景) ---
     content_length = len(content_text)
     
     # 根据文本长度动态调整字体大小和换行宽度
@@ -380,7 +415,7 @@ for idx, (_, row) in enumerate(df.iterrows(), 1):
     text = textwrap.fill(content_text, width=wrap_width)
     
     # 使用增强的行距提升可读性
-    line_spacing = 1.6  # 增加行距到1.6倍，提升阅读舒适度
+    line_spacing = 1.8  # 增加到1.8倍，更多留白，更加舒缓
     main_text_img, text_w, text_h = render_text_with_supersampling(text, optimal_font_size, TEXT_COLOR_MAIN, line_spacing)
     
     # 输出调试信息
@@ -388,17 +423,55 @@ for idx, (_, row) in enumerate(df.iterrows(), 1):
     print(f"   📝 内容长度: {content_length}字 | 字体大小: {optimal_font_size}px | 换行宽度: {wrap_width}字/行 | 行距: {line_spacing}")
     
     # 主体文本位置（调整到分割线下方）
-    main_text_y = divider_y_top + 120  # 在装饰分割线下方
+    main_text_y = divider_y_top + 150  # 增加更多留白空间
     text_x = (IMG_WIDTH - text_w) // 2
     
-    # 直接粘贴主文字，享受增强的行距效果
+    # --- 为主体文字区域创建极淡渐变背景 ---
+    # 计算文字区域范围，增加充足的内边距
+    text_bg_padding_x = 200  # 水平内边距
+    text_bg_padding_y = 100  # 垂直内边距
+    text_bg_width = text_w + text_bg_padding_x * 2
+    text_bg_height = text_h + text_bg_padding_y * 2
+    text_bg_x = text_x - text_bg_padding_x
+    text_bg_y = main_text_y - text_bg_padding_y
+    
+    # 创建极淡的米白到淡灰渐变
+    text_bg = Image.new("RGBA", (text_bg_width, text_bg_height), (0, 0, 0, 0))
+    text_bg_draw = ImageDraw.Draw(text_bg)
+    
+    # 极淡的渐变色彩（从米白色到淡灰色）
+    top_color = (252, 250, 248, 25)      # 极淡米白，透明度很低
+    bottom_color = (240, 240, 240, 35)   # 极淡灰色，透明度很低
+    
+    # 绘制柔和的垂直渐变
+    for y in range(text_bg_height):
+        ratio = y / text_bg_height
+        # 使用缓动函数让渐变更柔和
+        smooth_ratio = ratio * ratio * (3.0 - 2.0 * ratio)  # 平滑插值
+        
+        r = int(top_color[0] * (1 - smooth_ratio) + bottom_color[0] * smooth_ratio)
+        g = int(top_color[1] * (1 - smooth_ratio) + bottom_color[1] * smooth_ratio)
+        b = int(top_color[2] * (1 - smooth_ratio) + bottom_color[2] * smooth_ratio)
+        a = int(top_color[3] * (1 - smooth_ratio) + bottom_color[3] * smooth_ratio)
+        
+        text_bg_draw.line([(0, y), (text_bg_width, y)], fill=(r, g, b, a))
+    
+    # 添加极subtle的边框效果
+    border_color = (230, 230, 230, 20)
+    text_bg_draw.rectangle([0, 0, text_bg_width-1, text_bg_height-1], 
+                          outline=border_color, width=1)
+    
+    # 将渐变背景合成到主图
+    bg.paste(text_bg, (text_bg_x, text_bg_y), text_bg)
+    
+    # 粘贴主文字（在柔和背景之上）
     bg.paste(main_text_img, (text_x, main_text_y), main_text_img)
     
     # --- 下装饰分隔栏 ---
     divider_y_bottom = main_text_y + text_h + 150
     draw_decorative_divider(draw, 0, divider_y_bottom, IMG_WIDTH, "geometric")
 
-    # --- 引发思考 (动态字体大小 + 增强行距 + 专业级抗锯齿) ---
+    # --- 引发思考 (动态字体大小 + 增强行距 + 柔和背景) ---
     reflection_text = row['reflection'].strip()
     reflection_length = len(reflection_text)
     
@@ -416,36 +489,84 @@ for idx, (_, row) in enumerate(df.iterrows(), 1):
     reflection = textwrap.fill(reflection_text, width=reflect_wrap_width)
     
     # 反思文字也使用舒适的行距
-    reflection_line_spacing = 1.5
+    reflection_line_spacing = 1.7  # 增加行距，更多留白
     reflect_img, reflect_w, reflect_h = render_text_with_supersampling(reflection, reflection_font_size, TEXT_COLOR_REFLECT, reflection_line_spacing)
     
     print(f"   💭 反思长度: {reflection_length}字 | 字体大小: {reflection_font_size}px | 换行宽度: {reflect_wrap_width}字/行 | 行距: {reflection_line_spacing}")
     
-    reflect_text_y = divider_y_bottom + 200
+    reflect_text_y = divider_y_bottom + 250  # 增加更多留白
     reflect_x = (IMG_WIDTH - reflect_w) // 2
     
-    # 为反思文字添加引号装饰
-    quote_size = 40
-    quote_color = (150, 150, 150, 120)
+    # --- 为反思文字区域创建极淡渐变背景 ---
+    reflect_bg_padding_x = 180
+    reflect_bg_padding_y = 80
+    reflect_bg_width = reflect_w + reflect_bg_padding_x * 2
+    reflect_bg_height = reflect_h + reflect_bg_padding_y * 2
+    reflect_bg_x = reflect_x - reflect_bg_padding_x
+    reflect_bg_y = reflect_text_y - reflect_bg_padding_y
+    
+    # 创建极淡的渐变（反思区域用稍微不同的色调）
+    reflect_bg = Image.new("RGBA", (reflect_bg_width, reflect_bg_height), (0, 0, 0, 0))
+    reflect_bg_draw = ImageDraw.Draw(reflect_bg)
+    
+    # 极淡的渐变色彩（从淡蓝白到淡灰白）
+    top_color_reflect = (248, 250, 252, 20)      # 极淡蓝白
+    bottom_color_reflect = (245, 245, 247, 30)   # 极淡灰白
+    
+    # 绘制柔和的垂直渐变
+    for y in range(reflect_bg_height):
+        ratio = y / reflect_bg_height
+        smooth_ratio = ratio * ratio * (3.0 - 2.0 * ratio)
+        
+        r = int(top_color_reflect[0] * (1 - smooth_ratio) + bottom_color_reflect[0] * smooth_ratio)
+        g = int(top_color_reflect[1] * (1 - smooth_ratio) + bottom_color_reflect[1] * smooth_ratio)
+        b = int(top_color_reflect[2] * (1 - smooth_ratio) + bottom_color_reflect[2] * smooth_ratio)
+        a = int(top_color_reflect[3] * (1 - smooth_ratio) + bottom_color_reflect[3] * smooth_ratio)
+        
+        reflect_bg_draw.line([(0, y), (reflect_bg_width, y)], fill=(r, g, b, a))
+    
+    # 添加极subtle的边框
+    border_color_reflect = (220, 225, 230, 15)
+    reflect_bg_draw.rectangle([0, 0, reflect_bg_width-1, reflect_bg_height-1], 
+                             outline=border_color_reflect, width=1)
+    
+    # 将渐变背景合成到主图
+    bg.paste(reflect_bg, (reflect_bg_x, reflect_bg_y), reflect_bg)
+    
+    # 为反思文字添加柔和的引号装饰
+    quote_size = 35  # 稍微缩小引号
+    quote_color = (180, 180, 180, 80)  # 更淡的引号
     
     # 左引号
-    left_quote_x = reflect_x - 80
-    left_quote_y = reflect_text_y - 20
+    left_quote_x = reflect_x - 70
+    left_quote_y = reflect_text_y - 15
     draw.text((left_quote_x, left_quote_y), '"', font=ImageFont.truetype(
         font_path if os.path.exists(font_path) else "C:/Windows/Fonts/msyh.ttc", quote_size*2), 
         fill=quote_color)
     
     # 右引号
-    right_quote_x = reflect_x + reflect_w + 40
-    right_quote_y = reflect_text_y + reflect_h - 60
+    right_quote_x = reflect_x + reflect_w + 30
+    right_quote_y = reflect_text_y + reflect_h - 50
     draw.text((right_quote_x, right_quote_y), '"', font=ImageFont.truetype(
         font_path if os.path.exists(font_path) else "C:/Windows/Fonts/msyh.ttc", quote_size*2), 
         fill=quote_color)
     
+    # 粘贴反思文字（在柔和背景之上）
     bg.paste(reflect_img, (reflect_x, reflect_text_y), reflect_img)
     
+    # --- Home图标（反思内容下方，4倍放大） ---
+    home_icon_x = (IMG_WIDTH - home_icon_size[0]) // 2  # 水平居中
+    home_icon_y = reflect_text_y + reflect_h + 100  # 在反思内容下方，增加间距
+    
+    # 为home图标添加更明显的阴影（适配大图标）
+    home_shadow_offset = 6  # 增大阴影偏移
+    home_shadow_color = (0, 0, 0, 70)
+    home_shadow_bg = Image.new('RGBA', home_icon_size, home_shadow_color)
+    bg.paste(home_shadow_bg, (home_icon_x + home_shadow_offset, home_icon_y + home_shadow_offset), home_shadow_bg)
+    bg.paste(home_icon, (home_icon_x, home_icon_y), home_icon)
+    
     # --- 底部装饰线条 ---
-    bottom_line_y = reflect_text_y + reflect_h + 100
+    bottom_line_y = home_icon_y + home_icon_size[1] + 60  # 调整到home图标下方
     line_color = (140, 140, 140, 100)
     draw.line([(IMG_WIDTH//4, bottom_line_y), (IMG_WIDTH*3//4, bottom_line_y)], 
               fill=line_color, width=3)
