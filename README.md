@@ -31,6 +31,9 @@
 
 ```
 automatedPNG/
+├── run.py                     # 🚀 一键启动入口（推荐）
+├── start.bat                  # Windows批处理启动文件
+├── start.ps1                  # PowerShell启动脚本
 ├── src/
 │   ├── main_antialiasing.py    # 主程序（推荐）
 │   ├── preview_design.py       # 快速预览
@@ -42,6 +45,7 @@ automatedPNG/
 │       ├── SmileySans-Oblique.ttf  # 字体文件
 │       └── README.md          # 字体下载说明
 ├── output/                    # 输出目录
+├── .venv/                     # Python虚拟环境
 ├── requirements.txt           # 依赖列表
 └── README.md                 # 项目说明
 ```
@@ -70,14 +74,37 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 ### 4. 运行程序
+
+#### 🚀 方式一：一键启动（推荐）
+
+**Windows 用户：**
+```bash
+# 双击运行批处理文件
+start.bat
+
+# 或者双击运行 PowerShell 脚本
+start.ps1
+
+# 或者命令行运行
+python run.py
+```
+
+**其他系统：**
+```bash
+python run.py
+```
+
+#### 📝 方式二：直接运行脚本
 ```bash
 cd src
 
-# 生成单张预览图
-python preview_design.py
+# 使用虚拟环境Python（Windows）
+..\.venv\Scripts\python.exe preview_design.py      # 生成单张预览图
+..\.venv\Scripts\python.exe main_antialiasing.py   # 批量生成所有图片
 
-# 批量生成所有图片
-python main_antialiasing.py
+# 使用虚拟环境Python（Linux/Mac）
+../.venv/bin/python preview_design.py              # 生成单张预览图
+../.venv/bin/python main_antialiasing.py           # 批量生成所有图片
 ```
 
 ### 5. 查看结果
