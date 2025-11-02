@@ -1,0 +1,19 @@
+[project]
+name = "automated-png-generator"
+version = "1.0.0"
+description = "专业的批量心理语录图片生成工具，支持4K高清输出"
+authors = [
+    {name = "Your Name", email = "your.email@example.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+dependencies = [
+    "Pillow>=10.0.0",
+    "pandas>=2.0.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/automatedPNG"
+Repository = "https://github.com/yourusername/automatedPNG.git"
+Issues = "https://github.com/yourusername/automatedPNG/issues"
